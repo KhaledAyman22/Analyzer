@@ -5,11 +5,10 @@ A comprehensive trading analytics tool for analyzing IBKR (Interactive Brokers) 
 ## 🚀 Quick Start
 
 ```bash
-pip install -r requirements.txt
-streamlit run app.py
+After you install Python, run runner.bat and you are ready to go. 
 ```
 
-Upload your IBKR CSV and start analyzing!
+Upload your IBKR CSV containing (Symbol | TradeDate | Quantity | TradePrice | IBCommission | FifoPnlRealized | Buy/Sell) and start analyzing!
 
 ---
 
