@@ -1,6 +1,6 @@
 # 📊 Trading Performance Analyzer Pro
 
-A comprehensive trading analytics tool for analyzing IBKR (Interactive Brokers) trade data. Get deep insights into your trading performance with advanced metrics, visualizations, and behavioral analysis.
+A comprehensive trading analytics tool for analyzing IBKR (Interactive Brokers) trade data. Get deep insights into your trading performance with advanced metrics, visualizations, behavioral analysis, and **real-time portfolio tracking**.
 
 ## 🚀 Quick Start
 
@@ -46,8 +46,23 @@ Upload your IBKR CSV containing (Symbol | TradeDate | Quantity | TradePrice | IB
 
 ### Symbol Analysis
 - Performance per symbol
-- **Open Position Tracking** (blue highlighting)
+- **Open Position Tracking** (yellow highlighting)
 - Win rate, best/worst trades per symbol
+
+### Holdings Dashboard (NEW! 💼)
+- **Real-time portfolio view** with live prices from Yahoo Finance
+- **Accurate cost basis** using FIFO accounting (matches IBKR)
+- **Sector allocation** with interactive pie chart
+- **Unrealized P/L** tracking for open positions
+- **Concentration risk warnings**
+- Top 5 positions by value
+- Individual holdings breakdown with:
+  - Average cost per share (includes commissions)
+  - Cost basis (total invested)
+  - Current market value
+  - Unrealized profit/loss ($ and %)
+  - Portfolio allocation %
+  - Sector/Industry classification
 
 ### Time Analysis
 - Day of week performance
@@ -56,9 +71,10 @@ Upload your IBKR CSV containing (Symbol | TradeDate | Quantity | TradePrice | IB
 
 ### Interactive Features
 - Date and symbol filters
-- 6 organized tabs
+- 7 organized tabs
 - Export to CSV
-- Professional charts
+- Professional charts with proper margins
+- Parallel API fetching (fast loading)
 
 ---
 
@@ -131,7 +147,7 @@ FifoPnlRealized shown on SELL row: $198
 
 ## Using the App
 
-### 6 Tabs Explained
+### 7 Tabs Explained
 
 #### 📊 Overview Tab
 
@@ -147,7 +163,7 @@ FifoPnlRealized shown on SELL row: $198
 - **Profit Factor** (Total Wins ÷ Total Losses)
   - <1.0 = Losing
   - 1.5-2.0 = Good
-  - \>2.0 = Excellent
+  - />2.0 = Excellent
   
 - **Expectancy** (Average $ per trade)
   - Positive = Profitable strategy
@@ -156,7 +172,7 @@ FifoPnlRealized shown on SELL row: $198
 - **R/R Ratio** (Avg Win ÷ Avg Loss)
   - <1.5 = Below average
   - 1.5-2.5 = Good
-  - \>2.5 = Excellent
+  - />2.5 = Excellent
 
 **Risk Metrics:**
 - Max Drawdown, Streaks
@@ -172,7 +188,7 @@ FifoPnlRealized shown on SELL row: $198
 #### 🎯 Symbol Analysis Tab
 
 - Table of all symbols
-- **Blue = Open position** (Quantity sum > 0)
+- **Yellow = Open position** (Quantity sum > 0)
 - NetPnL, win rate per symbol
 - Top 10 chart
 
@@ -187,6 +203,53 @@ FifoPnlRealized shown on SELL row: $198
 - Top 5 winners
 - Top 5 losers
 - Learn from extremes
+
+#### 💼 Holdings Dashboard Tab (NEW!)
+
+**Real-Time Portfolio Tracking:**
+
+**Portfolio Summary:**
+- Total Cost Basis - Amount invested in open positions
+- Total Market Value - Current value with live prices
+- Total Unrealized P/L - Profit/loss on open positions ($ and %)
+- Number of Holdings and Sectors
+
+**Sector Allocation:**
+- Interactive pie chart showing portfolio by sector
+- Breakdown table with value and % per sector
+- ETF handling (gets category/sector info)
+
+**Individual Holdings Table:**
+Shows for each open position:
+- Symbol
+- Quantity held
+- **Average Cost** - FIFO cost basis (includes commissions!)
+- Current Price (live from Yahoo Finance)
+- Cost Basis - Total invested (Quantity × Avg Cost)
+- Market Value - Current worth
+- **Unrealized P/L ($)** - Profit/loss if you sold now
+- **Unrealized P/L (%)** - Return on investment
+- % of Portfolio
+- Sector/Industry
+- Last Trade Date
+
+**Concentration Analysis:**
+- Top 5 holdings by value (bar chart)
+- Portfolio concentration warnings:
+  - 🚨 Top 5 > 70%: High risk
+  - 🟡 Top 5 50-70%: Moderate
+  - ✅ Top 5 < 50%: Well diversified
+- Sector concentration alerts:
+  - 🚨 One sector > 50%: Heavy concentration
+  - 🟡 One sector 30-50%: Moderate exposure
+  - ✅ All sectors < 30%: Good diversification
+
+**Key Features:**
+- ✅ Matches IBKR cost basis (includes commissions)
+- ✅ Fast parallel fetching (1-2 seconds for 10 stocks)
+- ✅ Color-coded P/L (green for gains, red for losses)
+- ✅ Identifies break-even prices
+- ✅ Tax planning ready (shows unrealized gains)
 
 #### 📄 Raw Data Tab
 
@@ -218,7 +281,7 @@ FifoPnlRealized shown on SELL row: $198
 - <20%: ✅ Excellent - let winners run
 - 20-40%: 🟡 Moderate
 - 40-60%: ⚠️ High - cutting too early
-- \>60%: 🚨 Severe psychological issue
+- />60%: 🚨 Severe psychological issue
 
 ---
 
@@ -264,7 +327,7 @@ FifoPnlRealized shown on SELL row: $198
 - 1.0-1.5: ⚠️ Barely profitable
 - 1.5-2.0: 🟡 Decent
 - 2.0-3.0: ✅ Good
-- \>3.0: ✅ Excellent
+- />3.0: ✅ Excellent
 
 ---
 
@@ -300,9 +363,69 @@ FifoPnlRealized shown on SELL row: $198
 - <1.0: 🚨 Losses bigger than wins
 - 1.0-1.5: ⚠️ Below average
 - 1.5-2.5: ✅ Good
-- \>2.5: ✅ Excellent
+- />2.5: ✅ Excellent
 
 **Key:** You can be profitable with 40% win rate if R/R > 2:1
+
+---
+
+### Average Cost Basis (Holdings Dashboard)
+
+**What it is:** Weighted average price you paid for shares you **currently hold**.
+
+**How it's calculated:**
+Uses **FIFO (First-In-First-Out)** accounting:
+1. Each BUY creates a "lot" at that price
+2. Each SELL removes shares from oldest lots first
+3. **Commissions are included** in the cost per share
+4. Average = Total cost of remaining lots / Total remaining shares
+
+**Example:**
+```
+Buy 100 @ $150 + $0.35 commission → Cost: $150.0035/share
+Buy 50 @ $160 + $0.35 commission → Cost: $160.0070/share
+Sell 50 (removes from first buy)
+Remaining: 50@$150.0035 + 50@$160.0070
+Avg Cost = (50×$150.0035 + 50×$160.0070) / 100 = $155.01
+```
+
+**Why it matters:**
+- ✅ Matches IBKR calculations exactly
+- ✅ Includes commissions (tax-accurate)
+- ✅ Shows true break-even price
+- ✅ Basis for unrealized P/L
+
+---
+
+### Unrealized P/L (Holdings Dashboard)
+
+**What it is:** Profit or loss on positions you still hold (not yet sold).
+
+**Formula:**
+```
+Unrealized P/L = Market Value - Cost Basis
+Market Value = Quantity × Current Price
+Cost Basis = Quantity × Average Cost
+
+Unrealized P/L % = (Unrealized P/L / Cost Basis) × 100
+```
+
+**Example:**
+```
+Holding: 100 shares
+Avg Cost: $150 (your entry)
+Current Price: $160
+Market Value: 100 × $160 = $16,000
+Cost Basis: 100 × $150 = $15,000
+Unrealized P/L: $16,000 - $15,000 = +$1,000
+Unrealized P/L %: ($1,000 / $15,000) × 100 = +6.67%
+```
+
+**Why it matters:**
+- Shows current position performance
+- Helps decide when to take profits
+- Indicates tax liability if you sell
+- Combined with realized P/L = total trading return
 
 ---
 
@@ -319,7 +442,7 @@ FifoPnlRealized shown on SELL row: $198
 - <10%: Low risk
 - 10-20%: Moderate
 - 20-30%: ⚠️ High risk
-- \>30%: 🚨 Very high risk
+- />30%: 🚨 Very high risk
 
 ---
 
@@ -336,7 +459,7 @@ FifoPnlRealized shown on SELL row: $198
 - <15%: ✅ Good
 - 15-30%: 🟡 Acceptable
 - 30-50%: ⚠️ High - reduce frequency
-- \>50%: 🚨 Overtrading
+- />50%: 🚨 Overtrading
 
 ---
 
@@ -405,6 +528,10 @@ Expectancy: $45
 
 8. **Review Extremes**: Learn from best/worst trades
 
+9. **Check Holdings Dashboard**: Monitor unrealized P/L and sector allocation
+
+10. **Watch Concentration**: Keep top 5 holdings < 60% of portfolio
+
 ---
 
 ## Open Position Tracking
@@ -415,14 +542,21 @@ Expectancy: $45
 - If sum = 0: Closed
 
 **Visual:**
-- Blue highlighting in symbol table
+- Yellow highlighting in symbol table
 - `HasOpenPosition` column
 - `OpenPosition` shows quantity
+
+**Holdings Dashboard:**
+- Full breakdown with cost basis
+- Unrealized P/L tracking
+- Sector allocation
+- Live market prices
 
 **Why it matters:**
 - Track active positions
 - Distinguish realized vs unrealized
 - Risk management
+- Portfolio rebalancing
 
 ---
 
@@ -444,6 +578,22 @@ Expectancy: $45
 - Check Quantity sum
 - Might have fractional shares
 
+### Holdings Dashboard slow
+- Normal: Fetches live prices from Yahoo Finance
+- Typical: 1-2 seconds for 10 stocks
+- Uses parallel fetching for speed
+
+### Cost basis doesn't match IBKR
+- Should match within $0.01
+- Includes commissions (like IBKR)
+- Uses FIFO accounting
+- Check if all trades are in CSV
+
+### "Unknown" sector for ETF
+- Code attempts to get ETF category
+- Some ETFs may not have sector data
+- Manually verify ticker symbol is correct
+
 ---
 
 ## Validation Checklist
@@ -456,16 +606,20 @@ After upload, verify:
 ✅ Win Rate in 30-70% range  
 ✅ Open positions highlighted yellow  
 ✅ Equity curve trends correctly  
+✅ Holdings Dashboard cost basis matches IBKR  
+✅ Unrealized P/L seems accurate  
 
 ---
 
 ## Important Notes
 
-1. **FifoPnlRealized = Net P/L** (includes ALL commissions)
-2. **Don't add commissions** (already deducted)
-3. **Open positions** (yellow, Quantity sum > 0)
-4. **Time-based charts** (calendar time, not trade #)
-5. **All metrics** (closed trades only)
+1. **FifoPnlRealized = Net P/L** (includes ALL commissions for closed trades)
+2. **Don't add commissions** (already deducted from P/L)
+3. **Cost Basis DOES include commissions** (this is correct for tax purposes)
+4. **Open positions** (yellow highlighting, sum of Quantity > 0)
+5. **Time-based charts** (calendar time, not trade #)
+6. **All metrics** (based on closed trades only)
+7. **Holdings Dashboard** (tracks open positions with live prices)
 
 ---
 
@@ -477,7 +631,9 @@ After upload, verify:
 - [ ] Upload IBKR CSV
 - [ ] Check Overview tab
 - [ ] Review Performance charts
-- [ ] Identify open positions (yellow)
+- [ ] Identify open positions (yellow in Symbol Analysis)
+- [ ] **Check Holdings Dashboard for current portfolio**
+- [ ] **Review sector allocation and concentration**
 - [ ] Analyze time patterns
 - [ ] Review best/worst trades
 - [ ] Export data if needed
@@ -486,15 +642,23 @@ After upload, verify:
 
 ## Files Included
 
-- `analyzer.py` - Analysis engine
-- `app.py` - Streamlit UI
-- `requirements.txt` - Dependencies
+- `analyzer.py` - Analysis engine with FIFO cost basis
+- `app.py` - Streamlit UI with 7 tabs
+- `requirements.txt` - Dependencies (includes yfinance)
+- `runner.bat` - Use it to run the app
 - `README.md` - This file
 
 ---
 
 **Ready to analyze! 📊**
 
-Upload your CSV and discover patterns, strengths, and areas to improve in your trading strategy.
+Upload your CSV and discover:
+- Trading performance patterns
+- Behavioral issues (Fear Index)
+- Which symbols to trade/avoid
+- **Current portfolio allocation**
+- **Unrealized gains/losses**
+- **Sector diversification**
+- Areas for improvement
 
-For detailed metric explanations, scroll up to the "Metrics Explained" section. Everything you need to understand your performance is here!
+For detailed metric explanations, scroll up to the "Metrics Explained" section. Everything you need to understand your complete trading picture is here!

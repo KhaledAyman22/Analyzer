@@ -604,7 +604,7 @@ if uploaded_file:
             # Display table
             st.dataframe(
                 styled_holdings,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 height=400
             )

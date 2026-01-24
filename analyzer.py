@@ -393,10 +393,6 @@ def analyze_current_holdings(df):
             'sector_summary': {}
         }
     
-    # Get unique symbols to query (explicit confirmation)
-    unique_symbols = open_positions['Symbol'].unique().tolist()
-    print(f"Fetching data for {len(unique_symbols)} unique symbols: {', '.join(unique_symbols)}")
-    
     # Fetch ticker data in parallel (MUCH FASTER!)
     def fetch_ticker_data(symbol_data):
         symbol = symbol_data['symbol']
