@@ -147,7 +147,7 @@ FifoPnlRealized shown on SELL row: $198
 - **Profit Factor** (Total Wins ÷ Total Losses)
   - <1.0 = Losing
   - 1.5-2.0 = Good
-  - >2.0 = Excellent
+  - \>2.0 = Excellent
   
 - **Expectancy** (Average $ per trade)
   - Positive = Profitable strategy
@@ -156,7 +156,7 @@ FifoPnlRealized shown on SELL row: $198
 - **R/R Ratio** (Avg Win ÷ Avg Loss)
   - <1.5 = Below average
   - 1.5-2.5 = Good
-  - >2.5 = Excellent
+  - \>2.5 = Excellent
 
 **Risk Metrics:**
 - Max Drawdown, Streaks
@@ -218,7 +218,7 @@ FifoPnlRealized shown on SELL row: $198
 - <20%: ✅ Excellent - let winners run
 - 20-40%: 🟡 Moderate
 - 40-60%: ⚠️ High - cutting too early
-- >60%: 🚨 Severe psychological issue
+- \>60%: 🚨 Severe psychological issue
 
 ---
 
@@ -264,7 +264,7 @@ FifoPnlRealized shown on SELL row: $198
 - 1.0-1.5: ⚠️ Barely profitable
 - 1.5-2.0: 🟡 Decent
 - 2.0-3.0: ✅ Good
-- >3.0: ✅ Excellent
+- \>3.0: ✅ Excellent
 
 ---
 
@@ -300,7 +300,7 @@ FifoPnlRealized shown on SELL row: $198
 - <1.0: 🚨 Losses bigger than wins
 - 1.0-1.5: ⚠️ Below average
 - 1.5-2.5: ✅ Good
-- >2.5: ✅ Excellent
+- \>2.5: ✅ Excellent
 
 **Key:** You can be profitable with 40% win rate if R/R > 2:1
 
@@ -319,7 +319,7 @@ FifoPnlRealized shown on SELL row: $198
 - <10%: Low risk
 - 10-20%: Moderate
 - 20-30%: ⚠️ High risk
-- >30%: 🚨 Very high risk
+- \>30%: 🚨 Very high risk
 
 ---
 
@@ -336,7 +336,7 @@ FifoPnlRealized shown on SELL row: $198
 - <15%: ✅ Good
 - 15-30%: 🟡 Acceptable
 - 30-50%: ⚠️ High - reduce frequency
-- >50%: 🚨 Overtrading
+- \>50%: 🚨 Overtrading
 
 ---
 
