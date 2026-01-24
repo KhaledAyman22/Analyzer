@@ -551,14 +551,18 @@ if uploaded_file:
             #with col2:
             st.subheader("📋 Sector Breakdown")
                 
-            # Format sector allocation table
+            # Format sector allocation table - keep numeric for sorting
             sector_display = sector_df.copy()
-            sector_display['Market Value'] = sector_display['Market Value'].apply(lambda x: f"${x:,.2f}")
-            sector_display['% of Portfolio'] = sector_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
             
             st.dataframe(
                 sector_display,
-                width='stretch',
+                column_config={
+                    'Sector': st.column_config.TextColumn('Sector',width='None'),
+                    'Market Value': st.column_config.NumberColumn('Market Value', format='$%.2f',width='None'),
+                    'Number of Stocks': st.column_config.NumberColumn('# Stocks', format='%.0f',width='None'),
+                    '% of Portfolio': st.column_config.NumberColumn('% of Portfolio', format='%.1f %%',width='None')
+                },
+                use_container_width=True,
                 hide_index=True
             )
             
@@ -569,42 +573,60 @@ if uploaded_file:
             
             holdings_display = holdings_data['holdings'].copy()
             
-            # Format columns for display
-            holdings_display['Quantity'] = holdings_display['Quantity'].apply(lambda x: f"{x:.0f}")
-            holdings_display['Avg Cost'] = holdings_display['Avg Cost'].apply(lambda x: f"${x:.2f}")
-            holdings_display['Current Price'] = holdings_display['Current Price'].apply(lambda x: f"${x:.2f}")
-            holdings_display['Cost Basis'] = holdings_display['Cost Basis'].apply(lambda x: f"${x:,.2f}")
-            holdings_display['Market Value'] = holdings_display['Market Value'].apply(lambda x: f"${x:,.2f}")
-            holdings_display['Unrealized P/L'] = holdings_display['Unrealized P/L'].apply(lambda x: f"${x:,.2f}")
-            holdings_display['Unrealized P/L %'] = holdings_display['Unrealized P/L %'].apply(lambda x: f"{x:+.2f}%")
-            holdings_display['% of Portfolio'] = holdings_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
-            holdings_display['Last Trade Date'] = pd.to_datetime(holdings_display['Last Trade Date']).dt.strftime('%Y-%m-%d')
-            
             # Reorder columns for better readability
             column_order = ['Symbol', 'Quantity', 'Avg Cost', 'Current Price', 'Cost Basis', 
                            'Market Value', 'Unrealized P/L', 'Unrealized P/L %', '% of Portfolio', 
                            'Sector', 'Industry', 'Last Trade Date']
             holdings_display = holdings_display[column_order]
             
-            # Color code the unrealized P/L column
-            def color_pnl(val):
-                if isinstance(val, str):
-                    if val.startswith('+') or (val.startswith('$') and not val.startswith('$-')):
-                        return 'color: green'
-                    elif val.startswith('-') or val.startswith('$-'):
-                        return 'color: red'
+            # Convert Last Trade Date to datetime for proper display
+            holdings_display['Last Trade Date'] = pd.to_datetime(holdings_display['Last Trade Date'])
+            
+            # Define column configuration with proper formatting
+            # This keeps numeric values for sorting while displaying formatted
+            column_config = {
+                'Symbol': st.column_config.TextColumn('Symbol',width='None'),
+                'Quantity': st.column_config.NumberColumn('Quantity', format='%.0f',width='None'),
+                'Avg Cost': st.column_config.NumberColumn('Avg Cost', format='$%.2f',width='None'),
+                'Current Price': st.column_config.NumberColumn('Current Price', format='$%.2f',width='None'),
+                'Cost Basis': st.column_config.NumberColumn('Cost Basis', format='$%.2f',width='None'),
+                'Market Value': st.column_config.NumberColumn('Market Value', format='$%.2f',width='None'),
+                'Unrealized P/L': st.column_config.NumberColumn(
+                    'Unrealized P/L', 
+                    format='$%.2f',
+                   width='None',
+                    help='Profit/Loss if sold now'
+                ),
+                'Unrealized P/L %': st.column_config.NumberColumn(
+                    'Unrealized P/L %', 
+                    format='%.2f %%',
+                   width='None',
+                    help='Return on investment'
+                ),
+                '% of Portfolio': st.column_config.NumberColumn('% Portfolio', format='%.1f %%',width='None'),
+                'Sector': st.column_config.TextColumn('Sector',width='None'),
+                'Industry': st.column_config.TextColumn('Industry',width='None'),
+                'Last Trade Date': st.column_config.DateColumn('Last Trade', format='YYYY-MM-DD',width='None')
+            }
+            
+            # Color code P/L columns
+            def color_negative_red(val):
+                if isinstance(val, (int, float)):
+                    color = 'red' if val < 0 else 'green' if val > 0 else 'black'
+                    return f'color: {color}'
                 return ''
             
             # Apply styling
             styled_holdings = holdings_display.style.map(
-                color_pnl, 
+                color_negative_red,
                 subset=['Unrealized P/L', 'Unrealized P/L %']
             )
             
-            # Display table
+            # Display table with proper column config and styling
             st.dataframe(
                 styled_holdings,
-                width='stretch',
+                column_config=column_config,
+                use_container_width=True,
                 hide_index=True,
                 height=400
             )
