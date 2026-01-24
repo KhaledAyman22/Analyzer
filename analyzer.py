@@ -326,12 +326,61 @@ def analyze_current_holdings(df):
     import yfinance as yf
     from concurrent.futures import ThreadPoolExecutor, as_completed
     
+    # Calculate average cost basis for each symbol using FIFO
+    def calculate_avg_cost(symbol_df):
+        # Sort by date to process in order
+        symbol_df = symbol_df.sort_values('TradeDate').reset_index(drop=True)
+        
+        # Track lots (FIFO queue)
+        lots = []  # Each lot: {'quantity': qty, 'price': price}
+        
+        for _, row in symbol_df.iterrows():
+            qty = row['Quantity']
+            price = row['TradePrice']
+            
+            if qty > 0:  # BUY - add new lot
+                # Include commission in cost basis
+                commission_per_share = abs(row['IBCommission']) / qty
+                price_with_commission = price + commission_per_share
+                lots.append({'quantity': qty, 'price': price_with_commission})
+            
+            else:  # SELL - remove from oldest lots (FIFO)
+                sell_qty = abs(qty)
+                remaining_to_sell = sell_qty
+                
+                while remaining_to_sell > 0 and len(lots) > 0:
+                    if lots[0]['quantity'] <= remaining_to_sell:
+                        # Sell entire oldest lot
+                        remaining_to_sell -= lots[0]['quantity']
+                        lots.pop(0)
+                    else:
+                        # Partially sell oldest lot
+                        lots[0]['quantity'] -= remaining_to_sell
+                        remaining_to_sell = 0
+        
+        # Calculate weighted average of remaining lots
+        if len(lots) == 0:
+            return 0
+        
+        total_cost = sum(lot['quantity'] * lot['price'] for lot in lots)
+        total_shares = sum(lot['quantity'] for lot in lots)
+        
+        return total_cost / total_shares if total_shares > 0 else 0
+    
     # Calculate position for each symbol (this gives us UNIQUE symbols only)
-    position_summary = df.groupby('Symbol').agg({
-        'Quantity': 'sum',
-        'TradePrice': 'last',  # Last trade price as reference
-        'TradeDate': 'last'    # Last trade date
-    }).reset_index()
+    position_data = []
+    for symbol in df['Symbol'].unique():
+        symbol_df = df[df['Symbol'] == symbol]
+        
+        position_data.append({
+            'Symbol': symbol,
+            'Quantity': symbol_df['Quantity'].sum(),
+            'AvgCostBasis': calculate_avg_cost(symbol_df),
+            'LastTradePrice': symbol_df['TradePrice'].iloc[-1],
+            'TradeDate': symbol_df['TradeDate'].iloc[-1]
+        })
+    
+    position_summary = pd.DataFrame(position_data)
     
     # Filter for open positions only (Quantity > 0)
     open_positions = position_summary[position_summary['Quantity'] > 0].copy()
@@ -352,6 +401,7 @@ def analyze_current_holdings(df):
     def fetch_ticker_data(symbol_data):
         symbol = symbol_data['symbol']
         quantity = symbol_data['quantity']
+        avg_cost = symbol_data['avg_cost']
         last_price = symbol_data['last_price']
         last_date = symbol_data['last_date']
         
@@ -373,22 +423,41 @@ def analyze_current_holdings(df):
                 sector = 'Unknown'
                 industry = 'Unknown'
             
+            # Calculate P/L
+            cost_basis = quantity * avg_cost
+            market_value = quantity * current_price
+            unrealized_pnl = market_value - cost_basis
+            unrealized_pnl_pct = (unrealized_pnl / cost_basis * 100) if cost_basis > 0 else 0
+            
             return {
                 'Symbol': symbol,
                 'Quantity': quantity,
+                'Avg Cost': avg_cost,
                 'Current Price': current_price,
-                'Market Value': quantity * current_price,
+                'Cost Basis': cost_basis,
+                'Market Value': market_value,
+                'Unrealized P/L': unrealized_pnl,
+                'Unrealized P/L %': unrealized_pnl_pct,
                 'Sector': sector,
                 'Industry': industry,
                 'Last Trade Date': last_date
             }
         except Exception as e:
             # Fallback to last known price
+            cost_basis = quantity * avg_cost
+            market_value = quantity * last_price
+            unrealized_pnl = market_value - cost_basis
+            unrealized_pnl_pct = (unrealized_pnl / cost_basis * 100) if cost_basis > 0 else 0
+            
             return {
                 'Symbol': symbol,
                 'Quantity': quantity,
+                'Avg Cost': avg_cost,
                 'Current Price': last_price,
-                'Market Value': quantity * last_price,
+                'Cost Basis': cost_basis,
+                'Market Value': market_value,
+                'Unrealized P/L': unrealized_pnl,
+                'Unrealized P/L %': unrealized_pnl_pct,
                 'Sector': 'Unknown',
                 'Industry': 'Unknown',
                 'Last Trade Date': last_date
@@ -399,7 +468,8 @@ def analyze_current_holdings(df):
         {
             'symbol': row['Symbol'],
             'quantity': row['Quantity'],
-            'last_price': row['TradePrice'],
+            'avg_cost': row['AvgCostBasis'],
+            'last_price': row['LastTradePrice'],
             'last_date': row['TradeDate']
         }
         for _, row in open_positions.iterrows()

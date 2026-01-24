@@ -342,7 +342,7 @@ if uploaded_file:
             return f'color: {color}'
         
         if not symbol_df.empty:
-            styled_df = symbol_df.style.applymap(color_pnl, subset=['NetPnL'])
+            styled_df = symbol_df.style.map(color_pnl, subset=['NetPnL'])
         # Highlight symbols with open positions
         def highlight_open(row):
             if row.get('HasOpenPosition', False):
@@ -477,25 +477,42 @@ if uploaded_file:
             # Portfolio Summary
             st.subheader("📊 Portfolio Summary")
             
-            col1, col2, col3 = st.columns(3)
+            # Calculate totals
+            total_cost_basis = holdings_data['holdings']['Cost Basis'].sum()
+            total_market_value = holdings_data['total_market_value']
+            total_unrealized_pnl = total_market_value - total_cost_basis
+            total_unrealized_pnl_pct = (total_unrealized_pnl / total_cost_basis * 100) if total_cost_basis > 0 else 0
+            
+            col1, col2, col3, col4 = st.columns(4)
             
             with col1:
                 st.metric(
-                    "Total Market Value",
-                    f"${holdings_data['total_market_value']:,.2f}"
+                    "Total Cost Basis",
+                    f"${total_cost_basis:,.2f}",
+                    help="Total amount invested in current holdings"
                 )
             
             with col2:
                 st.metric(
-                    "Number of Holdings",
-                    len(holdings_data['holdings'])
+                    "Total Market Value",
+                    f"${total_market_value:,.2f}",
+                    help="Current value of all holdings"
                 )
             
             with col3:
-                num_sectors = len(holdings_data['sector_allocation'])
+                pnl_delta = "+" if total_unrealized_pnl >= 0 else ""
                 st.metric(
-                    "Sectors",
-                    num_sectors
+                    "Unrealized P/L",
+                    f"${total_unrealized_pnl:,.2f}",
+                    delta=f"{pnl_delta}{total_unrealized_pnl_pct:.2f}%",
+                    help="Profit/Loss on open positions"
+                )
+            
+            with col4:
+                st.metric(
+                    "Holdings / Sectors",
+                    f"{len(holdings_data['holdings'])} / {len(holdings_data['sector_allocation'])}",
+                    help="Number of stocks and sectors"
                 )
             
             st.divider()
@@ -552,17 +569,42 @@ if uploaded_file:
             
             holdings_display = holdings_data['holdings'].copy()
             
-            # Format columns
-            holdings_display['Current Price'] = holdings_display['Current Price'].apply(lambda x: f"${x:.2f}")
-            holdings_display['Market Value'] = holdings_display['Market Value'].apply(lambda x: f"${x:,.2f}")
-            holdings_display['% of Portfolio'] = holdings_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
+            # Format columns for display
             holdings_display['Quantity'] = holdings_display['Quantity'].apply(lambda x: f"{x:.0f}")
+            holdings_display['Avg Cost'] = holdings_display['Avg Cost'].apply(lambda x: f"${x:.2f}")
+            holdings_display['Current Price'] = holdings_display['Current Price'].apply(lambda x: f"${x:.2f}")
+            holdings_display['Cost Basis'] = holdings_display['Cost Basis'].apply(lambda x: f"${x:,.2f}")
+            holdings_display['Market Value'] = holdings_display['Market Value'].apply(lambda x: f"${x:,.2f}")
+            holdings_display['Unrealized P/L'] = holdings_display['Unrealized P/L'].apply(lambda x: f"${x:,.2f}")
+            holdings_display['Unrealized P/L %'] = holdings_display['Unrealized P/L %'].apply(lambda x: f"{x:+.2f}%")
+            holdings_display['% of Portfolio'] = holdings_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
             holdings_display['Last Trade Date'] = pd.to_datetime(holdings_display['Last Trade Date']).dt.strftime('%Y-%m-%d')
             
-            # Display with color coding by sector
+            # Reorder columns for better readability
+            column_order = ['Symbol', 'Quantity', 'Avg Cost', 'Current Price', 'Cost Basis', 
+                           'Market Value', 'Unrealized P/L', 'Unrealized P/L %', '% of Portfolio', 
+                           'Sector', 'Industry', 'Last Trade Date']
+            holdings_display = holdings_display[column_order]
+            
+            # Color code the unrealized P/L column
+            def color_pnl(val):
+                if isinstance(val, str):
+                    if val.startswith('+') or (val.startswith('$') and not val.startswith('$-')):
+                        return 'color: green'
+                    elif val.startswith('-') or val.startswith('$-'):
+                        return 'color: red'
+                return ''
+            
+            # Apply styling
+            styled_holdings = holdings_display.style.map(
+                color_pnl, 
+                subset=['Unrealized P/L', 'Unrealized P/L %']
+            )
+            
+            # Display table
             st.dataframe(
-                holdings_display,
-                width='stretch',
+                styled_holdings,
+                use_container_width=True,
                 hide_index=True,
                 height=400
             )
@@ -631,7 +673,6 @@ if uploaded_file:
                 else:
                     st.success("✅ Good sector diversification")
 
-    # ========== TAB 7: RAW DATA ==========
     # ========== TAB 7: RAW DATA ==========
     with tab7:
         st.header("📄 Raw Trade Data")
