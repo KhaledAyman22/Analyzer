@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from analyzer import analyze_trades, filter_trades_by_date, filter_trades_by_symbol
+from analyzer import analyze_trades, filter_trades_by_date, filter_trades_by_symbol, analyze_current_holdings
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Trade Analyzer Pro", layout="wide", page_icon="📊")
@@ -76,12 +76,13 @@ if uploaded_file:
     results = analyze_trades(df_filtered)
     
     # Create tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📊 Overview", 
         "📈 Performance", 
         "🎯 Symbol Analysis", 
         "📅 Time Analysis",
         "🏆 Best/Worst Trades",
+        "💼 Holdings Dashboard",
         "📄 Raw Data"
     ])
     
@@ -330,7 +331,7 @@ if uploaded_file:
     with tab3:
         st.header("Per-Symbol Performance")
         
-        st.info("💡 **Symbols highlighted in blue have open positions** (total quantity > 0)")
+        st.info("💡 **Symbols highlighted in yellow have open positions** (total quantity > 0)")
         
         # Format the dataframe
         symbol_df = results['symbol_stats'].copy()
@@ -341,11 +342,11 @@ if uploaded_file:
             return f'color: {color}'
         
         if not symbol_df.empty:
-            styled_df = symbol_df.style.map(color_pnl, subset=['NetPnL'])
+            styled_df = symbol_df.style.applymap(color_pnl, subset=['NetPnL'])
         # Highlight symbols with open positions
         def highlight_open(row):
             if row.get('HasOpenPosition', False):
-                return ['background-color: #172d43'] * len(row)
+                return ['background-color: #fff3cd'] * len(row)
             return [''] * len(row)
         
         styled_df = styled_df.apply(highlight_open, axis=1)
@@ -375,7 +376,7 @@ if uploaded_file:
         )
         
         st.plotly_chart(fig_symbols, width='stretch')
-
+    
     # ========== TAB 4: TIME ANALYSIS ==========
     with tab4:
         st.header("Time-Based Analysis")
@@ -462,8 +463,177 @@ if uploaded_file:
                     width='stretch'
                 )
     
-    # ========== TAB 6: RAW DATA ==========
+    # ========== TAB 6: HOLDINGS DASHBOARD ==========
     with tab6:
+        st.header("💼 Current Holdings Dashboard")
+        
+        # Analyze current holdings
+        with st.spinner("Fetching current prices and sector data..."):
+            holdings_data = analyze_current_holdings(df_filtered)
+        
+        if holdings_data['holdings'].empty:
+            st.info("📭 No open positions found. All positions are closed.")
+        else:
+            # Portfolio Summary
+            st.subheader("📊 Portfolio Summary")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    "Total Market Value",
+                    f"${holdings_data['total_market_value']:,.2f}"
+                )
+            
+            with col2:
+                st.metric(
+                    "Number of Holdings",
+                    len(holdings_data['holdings'])
+                )
+            
+            with col3:
+                num_sectors = len(holdings_data['sector_allocation'])
+                st.metric(
+                    "Sectors",
+                    num_sectors
+                )
+            
+            st.divider()
+            
+            # Sector Allocation
+            #col1, col2 = st.columns([2, 1])
+            
+            #with col1:
+            st.subheader("🎯 Sector Allocation")
+            
+            # Pie chart
+            sector_df = holdings_data['sector_allocation']
+            
+            fig_pie = go.Figure(data=[go.Pie(
+                labels=sector_df['Sector'],
+                values=sector_df['Market Value'],
+                hole=0.4,
+                textinfo='label+percent',
+                hovertemplate='<b>%{label}</b><br>' +
+                                'Value: $%{value:,.2f}<br>' +
+                                'Percentage: %{percent}<br>' +
+                                '<extra></extra>'
+            )])
+            
+            fig_pie.update_layout(
+                showlegend=True,
+                height=500,
+                title="Portfolio by Sector",
+                margin=dict(l=20, r=20, t=40, b=100)  # Add this line! b=bottom padding
+            )
+            
+            st.plotly_chart(fig_pie, width='stretch')
+        
+            st.divider()
+
+            #with col2:
+            st.subheader("📋 Sector Breakdown")
+                
+            # Format sector allocation table
+            sector_display = sector_df.copy()
+            sector_display['Market Value'] = sector_display['Market Value'].apply(lambda x: f"${x:,.2f}")
+            sector_display['% of Portfolio'] = sector_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
+            
+            st.dataframe(
+                sector_display,
+                width='stretch',
+                hide_index=True
+            )
+            
+            st.divider()
+            
+            # Holdings Table
+            st.subheader("📈 Individual Holdings")
+            
+            holdings_display = holdings_data['holdings'].copy()
+            
+            # Format columns
+            holdings_display['Current Price'] = holdings_display['Current Price'].apply(lambda x: f"${x:.2f}")
+            holdings_display['Market Value'] = holdings_display['Market Value'].apply(lambda x: f"${x:,.2f}")
+            holdings_display['% of Portfolio'] = holdings_display['% of Portfolio'].apply(lambda x: f"{x:.1f}%")
+            holdings_display['Quantity'] = holdings_display['Quantity'].apply(lambda x: f"{x:.0f}")
+            holdings_display['Last Trade Date'] = pd.to_datetime(holdings_display['Last Trade Date']).dt.strftime('%Y-%m-%d')
+            
+            # Display with color coding by sector
+            st.dataframe(
+                holdings_display,
+                width='stretch',
+                hide_index=True,
+                height=400
+            )
+            
+            st.divider()
+            
+            # Top Holdings
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("🏆 Top 5 Holdings by Value")
+                
+                top_5 = holdings_data['holdings'].nlargest(5, 'Market Value')
+                
+                fig_top = go.Figure(data=[
+                    go.Bar(
+                        x=top_5['Market Value'],
+                        y=top_5['Symbol'],
+                        orientation='h',
+                        marker_color='#00cc00',
+                        text=[f"${x:,.0f}" for x in top_5['Market Value']],
+                        textposition='auto'
+                    )
+                ])
+                
+                fig_top.update_layout(
+                    xaxis_title='Market Value ($)',
+                    yaxis_title='Symbol',
+                    height=300,
+                    yaxis={'categoryorder': 'total ascending'}
+                )
+                
+                st.plotly_chart(fig_top, width='stretch')
+            
+            with col2:
+                st.subheader("📊 Concentration Risk")
+                
+                # Calculate concentration
+                top_5_pct = top_5['% of Portfolio'].sum()
+                
+                st.metric("Top 5 Holdings", f"{top_5_pct:.1f}%", 
+                         help="Percentage of portfolio in top 5 holdings")
+                
+                if top_5_pct > 70:
+                    st.warning("⚠️ High concentration risk (>70% in top 5)")
+                elif top_5_pct > 50:
+                    st.info("🟡 Moderate concentration (50-70% in top 5)")
+                else:
+                    st.success("✅ Well diversified (<50% in top 5)")
+                
+                # Sector concentration
+                max_sector_pct = holdings_data['sector_allocation']['% of Portfolio'].max()
+                max_sector = holdings_data['sector_allocation'].loc[
+                    holdings_data['sector_allocation']['% of Portfolio'].idxmax(), 'Sector'
+                ]
+                
+                st.metric(
+                    f"Largest Sector ({max_sector})",
+                    f"{max_sector_pct:.1f}%"
+                )
+                
+                if max_sector_pct > 50:
+                    st.warning(f"⚠️ Heavy concentration in {max_sector}")
+                elif max_sector_pct > 30:
+                    st.info(f"🟡 Moderate exposure to {max_sector}")
+                else:
+                    st.success("✅ Good sector diversification")
+
+    # ========== TAB 7: RAW DATA ==========
+    # ========== TAB 7: RAW DATA ==========
+    with tab7:
         st.header("📄 Raw Trade Data")
         
         if not results['processed_df'].empty:

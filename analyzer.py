@@ -314,6 +314,150 @@ def analyze_trades(df):
         "processed_df": closed_trades,
     }
 
+
+def analyze_current_holdings(df):
+    """
+    Analyze current holdings (open positions) with sector information.
+    Returns holdings with sector breakdown and allocation percentages.
+    
+    NOTE: Queries unique tickers only (grouped by Symbol first).
+    Uses batch fetching and threading for speed.
+    """
+    import yfinance as yf
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    
+    # Calculate position for each symbol (this gives us UNIQUE symbols only)
+    position_summary = df.groupby('Symbol').agg({
+        'Quantity': 'sum',
+        'TradePrice': 'last',  # Last trade price as reference
+        'TradeDate': 'last'    # Last trade date
+    }).reset_index()
+    
+    # Filter for open positions only (Quantity > 0)
+    open_positions = position_summary[position_summary['Quantity'] > 0].copy()
+    
+    if len(open_positions) == 0:
+        return {
+            'holdings': pd.DataFrame(),
+            'sector_allocation': pd.DataFrame(),
+            'total_market_value': 0,
+            'sector_summary': {}
+        }
+    
+    # Get unique symbols to query (explicit confirmation)
+    unique_symbols = open_positions['Symbol'].unique().tolist()
+    print(f"Fetching data for {len(unique_symbols)} unique symbols: {', '.join(unique_symbols)}")
+    
+    # Fetch ticker data in parallel (MUCH FASTER!)
+    def fetch_ticker_data(symbol_data):
+        symbol = symbol_data['symbol']
+        quantity = symbol_data['quantity']
+        last_price = symbol_data['last_price']
+        last_date = symbol_data['last_date']
+        
+        try:
+            ticker = yf.Ticker(symbol)
+            
+            # Get current price (fast)
+            try:
+                current_price = ticker.fast_info['lastPrice']
+            except:
+                current_price = last_price
+            
+            # Get sector/industry (slower, but necessary)
+            try:
+                info = ticker.info
+                sector = info.get('sector', info.get('category', 'Unknown'))
+                industry = info.get('industry', 'Unknown')
+            except:
+                sector = 'Unknown'
+                industry = 'Unknown'
+            
+            return {
+                'Symbol': symbol,
+                'Quantity': quantity,
+                'Current Price': current_price,
+                'Market Value': quantity * current_price,
+                'Sector': sector,
+                'Industry': industry,
+                'Last Trade Date': last_date
+            }
+        except Exception as e:
+            # Fallback to last known price
+            return {
+                'Symbol': symbol,
+                'Quantity': quantity,
+                'Current Price': last_price,
+                'Market Value': quantity * last_price,
+                'Sector': 'Unknown',
+                'Industry': 'Unknown',
+                'Last Trade Date': last_date
+            }
+    
+    # Prepare data for parallel fetching
+    symbols_to_fetch = [
+        {
+            'symbol': row['Symbol'],
+            'quantity': row['Quantity'],
+            'last_price': row['TradePrice'],
+            'last_date': row['TradeDate']
+        }
+        for _, row in open_positions.iterrows()
+    ]
+    
+    # Fetch all tickers in parallel
+    holdings_data = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(fetch_ticker_data, data) for data in symbols_to_fetch]
+        for future in as_completed(futures):
+            holdings_data.append(future.result())
+    
+    # Create holdings dataframe
+    holdings_df = pd.DataFrame(holdings_data)
+    
+    if len(holdings_df) == 0:
+        return {
+            'holdings': pd.DataFrame(),
+            'sector_allocation': pd.DataFrame(),
+            'total_market_value': 0,
+            'sector_summary': {}
+        }
+    
+    # Calculate total portfolio value
+    total_market_value = holdings_df['Market Value'].sum()
+    
+    # Add allocation percentage
+    holdings_df['% of Portfolio'] = (holdings_df['Market Value'] / total_market_value * 100).round(2)
+    
+    # Sort by market value
+    holdings_df = holdings_df.sort_values('Market Value', ascending=False)
+    
+    # Calculate sector allocation
+    sector_allocation = holdings_df.groupby('Sector').agg({
+        'Market Value': 'sum',
+        'Symbol': 'count'
+    }).reset_index()
+    sector_allocation.columns = ['Sector', 'Market Value', 'Number of Stocks']
+    sector_allocation['% of Portfolio'] = (sector_allocation['Market Value'] / total_market_value * 100).round(2)
+    sector_allocation = sector_allocation.sort_values('Market Value', ascending=False)
+    
+    # Create sector summary dictionary
+    sector_summary = {}
+    for _, row in sector_allocation.iterrows():
+        sector_summary[row['Sector']] = {
+            'value': row['Market Value'],
+            'percentage': row['% of Portfolio'],
+            'count': int(row['Number of Stocks'])
+        }
+    
+    return {
+        'holdings': holdings_df,
+        'sector_allocation': sector_allocation,
+        'total_market_value': total_market_value,
+        'sector_summary': sector_summary
+    }
+
+
 def filter_trades_by_date(df, start_date=None, end_date=None):
     df['TradeDate'] = pd.to_datetime(df['TradeDate'])
     if start_date:
