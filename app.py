@@ -331,7 +331,7 @@ if uploaded_file:
     with tab3:
         st.header("Per-Symbol Performance")
         
-        st.info("💡 **Symbols highlighted in yellow have open positions** (total quantity > 0)")
+        st.info("💡 **Symbols highlighted in blue have open positions**")
         
         # Format the dataframe
         symbol_df = results['symbol_stats'].copy()
@@ -346,7 +346,7 @@ if uploaded_file:
         # Highlight symbols with open positions
         def highlight_open(row):
             if row.get('HasOpenPosition', False):
-                return ['background-color: #fff3cd'] * len(row)
+                return ['background-color: #172d43'] * len(row)
             return [''] * len(row)
         
         styled_df = styled_df.apply(highlight_open, axis=1)

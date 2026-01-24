@@ -46,7 +46,7 @@ Upload your IBKR CSV containing (Symbol | TradeDate | Quantity | TradePrice | IB
 
 ### Symbol Analysis
 - Performance per symbol
-- **Open Position Tracking** (yellow highlighting)
+- **Open Position Tracking** (blue highlighting)
 - Win rate, best/worst trades per symbol
 
 ### Holdings Dashboard (NEW! 💼)
@@ -188,7 +188,7 @@ FifoPnlRealized shown on SELL row: $198
 #### 🎯 Symbol Analysis Tab
 
 - Table of all symbols
-- **Yellow = Open position** (Quantity sum > 0)
+- **Blue = Open position** (Quantity sum > 0)
 - NetPnL, win rate per symbol
 - Top 10 chart
 
@@ -542,7 +542,7 @@ Expectancy: $45
 - If sum = 0: Closed
 
 **Visual:**
-- Yellow highlighting in symbol table
+- Blue highlighting in symbol table
 - `HasOpenPosition` column
 - `OpenPosition` shows quantity
 
@@ -604,7 +604,7 @@ After upload, verify:
 ✅ Total Fees = sum of IBCommission  
 ✅ Trades = rows with FifoPnlRealized ≠ 0  
 ✅ Win Rate in 30-70% range  
-✅ Open positions highlighted yellow  
+✅ Open positions highlighted blue  
 ✅ Equity curve trends correctly  
 ✅ Holdings Dashboard cost basis matches IBKR  
 ✅ Unrealized P/L seems accurate  
@@ -616,7 +616,7 @@ After upload, verify:
 1. **FifoPnlRealized = Net P/L** (includes ALL commissions for closed trades)
 2. **Don't add commissions** (already deducted from P/L)
 3. **Cost Basis DOES include commissions** (this is correct for tax purposes)
-4. **Open positions** (yellow highlighting, sum of Quantity > 0)
+4. **Open positions** (blue highlighting, sum of Quantity > 0)
 5. **Time-based charts** (calendar time, not trade #)
 6. **All metrics** (based on closed trades only)
 7. **Holdings Dashboard** (tracks open positions with live prices)
@@ -631,7 +631,7 @@ After upload, verify:
 - [ ] Upload IBKR CSV
 - [ ] Check Overview tab
 - [ ] Review Performance charts
-- [ ] Identify open positions (yellow in Symbol Analysis)
+- [ ] Identify open positions (blue in Symbol Analysis)
 - [ ] **Check Holdings Dashboard for current portfolio**
 - [ ] **Review sector allocation and concentration**
 - [ ] Analyze time patterns
